@@ -2,11 +2,11 @@ class LoginController < ApplicationController
   require 'digest/md5'
 
   def login
-    user = User.find(email: login_params[:email], password: Digest::MD5.hexdigest(login_params[:password]))
-    render status: :forbidden unless User.exists(user)
+    user = User.where(email: login_params[:email], password: Digest::MD5.hexdigest(login_params[:password]))
+    render status: :forbidden unless User.exists?(user)
     token = generate_token
     user.update(token: token)
-    render token
+    render plain: token
   end
 
   def register
@@ -16,16 +16,18 @@ class LoginController < ApplicationController
     params[:token] = token
     user = User.new(params)
     if user.save
-      render token, status: :created
+      render plain: token, status: :created
     else
       render json: user.errors, status: :unprocessable_entity
     end
   end
 
   def update
-    user = User.find(token: user_params[:token])
-    render status: :forbidden unless User.exists(user)
-    if user.update(user_params)
+    params = user_params
+    params[:password] = Digest::MD5.hexdigest(params[:password]) if params[:password]
+    user = User.where(token: params[:token])
+    render status: :forbidden unless User.exists?(user)
+    if user.update(params)
       render status: :accepted
     else
       render json: user.errors, status: :unprocessable_entity
