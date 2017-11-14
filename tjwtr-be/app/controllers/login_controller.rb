@@ -3,7 +3,10 @@ class LoginController < ApplicationController
 
   def login
     user = User.where(email: login_params[:email], password: Digest::MD5.hexdigest(login_params[:password]))
-    render status: :forbidden unless User.exists?(user)
+    unless User.exists?(user)
+      render status: :forbidden
+      return
+    end
     token = generate_token
     user.update(token: token)
     render plain: token
@@ -26,7 +29,10 @@ class LoginController < ApplicationController
     params = user_params
     params[:password] = Digest::MD5.hexdigest(params[:password]) if params[:password]
     user = User.where(token: params[:token])
-    render status: :forbidden unless User.exists?(user)
+    unless User.exists?(user)
+      render status: :forbidden
+      return
+    end
     if user.update(params)
       render status: :accepted
     else
@@ -42,14 +48,15 @@ class LoginController < ApplicationController
 
   # Only allow a trusted parameter "white list" through.
   def register_params
-    params.require(:user).permit(:name, :email, :password)
+    params.permit(:name, :email, :password)
   end
 
   def login_params
-    params.require(:user).permit(:email, :password)
+    params.permit(:email, :password)
   end
 
   def user_params
-    params.require(:user).permit(:name, :email, :password, :token)
+    params.require(:token)
+    params.permit(:name, :email, :password, :token)
   end
 end
