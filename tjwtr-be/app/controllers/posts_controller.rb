@@ -4,7 +4,6 @@ class PostsController < ApplicationController
   # GET /posts
   def index
     @posts = Post.all
-
     render json: @posts
   end
 
@@ -15,7 +14,12 @@ class PostsController < ApplicationController
 
   # POST /posts
   def create
-    @post = Post.new(post_params)
+    user = User.where(token: post_params[:token])
+    unless User.exists?(user)
+      render status: :forbidden
+      return
+    end
+    @post = Post.new(content: post_params[:content], user: user)
 
     if @post.save
       render json: @post, status: :created, location: @post
@@ -26,7 +30,11 @@ class PostsController < ApplicationController
 
   # PATCH/PUT /posts/1
   def update
-    if @post.update(post_params)
+    unless post_params[:token] === @post.user.token
+      render status: :forbidden
+      return
+    end
+    if @post.update(content: post_params[:content])
       render json: @post
     else
       render json: @post.errors, status: :unprocessable_entity
@@ -35,6 +43,10 @@ class PostsController < ApplicationController
 
   # DELETE /posts/1
   def destroy
+    unless post_params[:token] === @post.user.token
+      render status: :forbidden
+      return
+    end
     @post.destroy
   end
 
@@ -46,6 +58,6 @@ class PostsController < ApplicationController
 
     # Only allow a trusted parameter "white list" through.
     def post_params
-      params.require(:post).permit(:user_id, :content)
+      params.require(:post).permit(:token, :content)
     end
 end

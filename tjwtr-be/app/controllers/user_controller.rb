@@ -1,4 +1,4 @@
-class LoginController < ApplicationController
+class UserController < ApplicationController
   require 'digest/md5'
 
   def login
@@ -48,15 +48,14 @@ class LoginController < ApplicationController
 
   # Only allow a trusted parameter "white list" through.
   def register_params
-    params.permit(:name, :email, :password)
+    params.require(:user).permit(:name, :email, :password)
   end
 
   def login_params
-    params.permit(:email, :password)
+    params.require(:user).permit(:email, :password)
   end
 
   def user_params
-    params.require(:token)
-    params.permit(:name, :email, :password, :token)
+    params.require(:user).permit(:name, :email, :password, :token)
   end
 end
